@@ -240,7 +240,7 @@ public class MatFilter {
     public static Mat getHoughMat(Mat srcMat) {
         return getHoughMat(srcMat, hough_threshold, hough_minLinLength, hough_maxLineGap);
     }
-    public static  Mat customColors(Mat srcMat)
+    public static  Mat customColors1(Mat srcMat)
     {
         Bitmap bitmap = Bitmap.createBitmap(srcMat.cols(), srcMat.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(srcMat, bitmap);
@@ -292,11 +292,11 @@ public class MatFilter {
            }
        }
        Mat resMat1 = new Mat();
-        FindxStart(bitmap);
+       // FindxStart(bitmap);
         Utils.bitmapToMat(bitmap, resMat1);
         return resMat1;
     }
-    private static void FindxStart( Bitmap bitmap ) {
+    private static void FindxStart( int[][] colorArray, int width, int height, Bitmap bitmap) {
         int[] currentColor = new int[3];
         int[] lastColor = new int[3];
         int highestRed = 0;
@@ -319,9 +319,9 @@ public class MatFilter {
         int lastredtemp = 0;
         boolean firstBluePicked = false;
         boolean firstRedPicked = false;
-        for (int x = 0; x < bitmap.getWidth(); x++) {
-            for (int y = 0; y < bitmap.getHeight(); y++) {
-                int maskRGB = bitmap.getPixel(x, y);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int maskRGB = colorArray[x][y];
                 int currentBlue = Color.blue(maskRGB);
                 int currentRed = Color.red(maskRGB);
                 if (currentBlue == 255) {
@@ -389,11 +389,11 @@ public class MatFilter {
         //printHLine(lastred, 0);
         // printHLine(firstblue, 0);
         // printHLine(lastblue, 0);
-        findEdge(highestBluex, firstblue, lastred, "BLUE", bitmap);
-        findEdge(highestRedx, firstred, lastred, "RED", bitmap);
+        findEdge(highestBluex, firstblue, lastred, "BLUE", colorArray, width, height, bitmap);
+        findEdge(highestRedx, firstred, lastred, "RED", colorArray, width, height, bitmap);
 
     }
-    private static void findEdge(int x, int y1, int y2, String color, Bitmap bitmap) {
+    private static void findEdge(int x, int y1, int y2, String color, int[][] colorArray, int width, int height, Bitmap bitmap) {
         int[] currentColor;
         int colorVal = 0;
         int startx = 0;
@@ -401,7 +401,7 @@ public class MatFilter {
         for (int x1 = x; x1 > 0; x1 += -1) {
             for (int y = y1; y < y2; y++) {
 
-                int maskRGB = bitmap.getPixel(x1, y);
+                int maskRGB =colorArray[x1][ y];
                 int colortotal = Color.blue(maskRGB) + Color.red(maskRGB);
                 if (colortotal > 0) {
                     colorVal++;
@@ -417,10 +417,10 @@ public class MatFilter {
         }
         colorVal = 0;
 
-        for (int x1 = x; x1 < bitmap.getWidth(); x1 += 1) {
+        for (int x1 = x; x1 < width; x1 += 1) {
             for (int y = y1; y < y2; y++) {
 
-                int maskRGB = bitmap.getPixel(x1, y);
+                int maskRGB = colorArray[x1][y];
                 int colortotal = Color.blue(maskRGB) + Color.red(maskRGB);
                 if (colortotal > 0) {
                     colorVal++;
@@ -434,9 +434,9 @@ public class MatFilter {
             }
             colorVal = 0;
         }
-        findButton(startx, endx, y1, y2, color, bitmap);
+        findButton(startx, endx, y1, y2, color, colorArray, bitmap);
     }
-    private static void findButton(int x1, int x2, int y1, int y2, String Color1, Bitmap bitmap) {
+    private static void findButton(int x1, int x2, int y1, int y2, String Color1, int[][] colorArray, Bitmap bitmap) {
         int blackVal = 0;
         int offset = Math.abs(x1 - x2) / 4;
         int yOffset = 2 * Math.abs(y1 - y2) / 3;
@@ -446,7 +446,7 @@ public class MatFilter {
 
         for (int x = (x1 + offset); x < (x2 - offset); x++) {
             for (int y = (y1 + yOffset); y < y2; y++) {
-                int maskRGB = bitmap.getPixel(x,y);
+                int maskRGB = colorArray[x][y];
                 int colortotal = Color.blue(maskRGB) + Color.red(maskRGB);
                 if (colortotal == 0) {
                     blackxVal += x;
@@ -469,10 +469,71 @@ public class MatFilter {
             bitmap.setPixel(xVal, z, Color.argb(255,0,255,0));
         }
     }
-    private static void printHLine(int yVal, int color, Bitmap bitmap) {
+    private static void printHLine(int yVal, int color, Bitmap bitmap ) {
 
             for (int z = 0; z < bitmap.getWidth(); z++) {
-                bitmap.setPixel(z, yVal, Color.argb(255,0,255,0));
+                bitmap.setPixel(z, yVal, Color.argb(255, 0, 255, 0));
         }
     }
+
+    public static  Mat customColors(Mat srcMat)
+    {
+         int[][] colorArray = new int[srcMat.cols()] [srcMat.rows()];
+        Bitmap bitmap = Bitmap.createBitmap(srcMat.cols(), srcMat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(srcMat, bitmap);
+        int height = bitmap.getHeight();
+        int width = bitmap.getWidth();
+        for ( int x = 0; x  < width; x++ ) {
+            for (int y = 0; y < height; y++) {
+                int totalColor = bitmap.getPixel(x, y);
+                int oldcolors[] = {Color.red(totalColor), Color.green(totalColor), Color.blue(totalColor)};
+                int[] newColors = {0, 0, 0};
+                for (int x1 = 0; x1 <= 2; x1++) {
+                    if ((oldcolors[0] + oldcolors[1] + oldcolors[2] > 400) && (oldcolors[0] + oldcolors[1] + oldcolors[2] < 600)
+                            && x1 == 0) {
+                        // newColors[1] = 100;
+                        // newColors[2] = 120;
+                        // newColors[0] = 100;
+                    }
+                    if (x1 == 1) {
+                        continue;
+                    }
+                    if (x1 == 0) {
+
+                    }
+                    if ((oldcolors[0] + oldcolors[1] + oldcolors[2] > 440) && oldcolors[x1] > 200
+                            && oldcolors[x1] > 50 + .5 * ((oldcolors[1] + oldcolors[0] + oldcolors[2]) - (oldcolors[x1]))) {
+                        newColors[1] = 0;
+                        newColors[2] = 0;
+                        newColors[0] = 0;
+                        newColors[x1] = 255;
+                    } else {
+                        // newColors[x1] = 0;
+                    }
+
+                    if (x1 == 0 && oldcolors[1] > oldcolors[2] && oldcolors[0] < (oldcolors[1] + 60)) {
+                        newColors[1] = 0;
+                        newColors[2] = 0;
+                        newColors[0] = 0;
+
+                    }
+
+
+                    if ((oldcolors[0] + oldcolors[1] + oldcolors[2]) > 700) {
+                        newColors[1] = 0;
+                        newColors[2] = 0;
+                        newColors[0] = 0;
+                    }
+                }
+                int color = Color.argb(255, newColors[0], newColors[1], newColors[2]);
+                bitmap.setPixel(x, y, color);
+                colorArray[x][y] = color;
+            }
+        }
+        Mat resMat1 = new Mat();
+        FindxStart(colorArray, width, height, bitmap);
+        Utils.bitmapToMat(bitmap, resMat1);
+        return resMat1;
+    }
 }
+
